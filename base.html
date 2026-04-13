@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}МедАнамнез{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+  {% if user is defined and user %}
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#22c55e"/>
+        <path d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7z" fill="white"/>
+      </svg>
+      МедАнамнез
+    </div>
+    <div class="navbar-user">
+      <span class="role-badge role-{{ user.role }}">
+        {% if user.role == 'patient' %}Пациент
+        {% elif user.role == 'doctor' %}Врач
+        {% elif user.role == 'admin' %}Администратор
+        {% endif %}
+      </span>
+      <span class="user-name">{{ user.full_name }}</span>
+      <a href="/logout" class="btn-logout">Выйти</a>
+    </div>
+  </nav>
+  {% endif %}
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

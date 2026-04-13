@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Кабинет пациента{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Добро пожаловать, {{ user.full_name.split()[0] }}!</h1>
+  <p class="text-muted">Ваши записи на приём</p>
+</div>
+
+{% if not appointments %}
+<div class="empty-state">
+  <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+    <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" fill="#22c55e"/>
+  </svg>
+  <h3>Записей нет</h3>
+  <p>Обратитесь в регистратуру для записи на приём</p>
+</div>
+{% else %}
+<div class="cards-grid">
+  {% for appt in appointments %}
+  <div class="card appointment-card status-{{ appt.status }}">
+    <div class="card-header">
+      <div class="appt-date">
+        <span class="appt-day">{{ appt.appointment_datetime.strftime('%d') }}</span>
+        <span class="appt-month">{{ appt.appointment_datetime.strftime('%b') }}</span>
+      </div>
+      <div class="appt-info">
+        <div class="appt-time">{{ appt.appointment_datetime.strftime('%H:%M') }}</div>
+        <div class="appt-doctor">{{ appt.doctor.full_name }}</div>
+      </div>
+      <div class="appt-status">
+        {% if appt.status == 'pending' %}
+        <span class="badge badge-warning">Ожидает анамнеза</span>
+        {% elif appt.status == 'filled' %}
+        <span class="badge badge-success">Анамнез заполнен</span>
+        {% elif appt.status == 'completed' %}
+        <span class="badge badge-info">Завершён</span>
+        {% endif %}
+      </div>
+    </div>
+    {% if appt.notes %}
+    <div class="card-body">
+      <p class="text-muted">{{ appt.notes }}</p>
+    </div>
+    {% endif %}
+    <div class="card-footer">
+      {% if appt.status == 'pending' %}
+      <a href="/patient/anamnesis/{{ appt.id }}" class="btn btn-primary">
+        Заполнить анамнез
+      </a>
+      {% elif appt.status == 'filled' %}
+      <a href="/patient/anamnesis/{{ appt.id }}" class="btn btn-outline">
+        Изменить анамнез
+      </a>
+      {% else %}
+      <span class="text-muted">Приём завершён</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

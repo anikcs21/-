@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Кабинет врача{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Приёмы на сегодня</h1>
+  <p class="text-muted">{{ today.strftime('%d.%m.%Y') }} — {{ user.full_name }}</p>
+</div>
+
+{% if not appointments %}
+<div class="empty-state">
+  <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" fill="#22c55e"/>
+  </svg>
+  <h3>На сегодня приёмов нет</h3>
+  <p>Записи на другие дни управляются администратором</p>
+</div>
+{% else %}
+<div class="table-container">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Время</th>
+        <th>Пациент</th>
+        <th>Статус</th>
+        <th>Действие</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for appt in appointments %}
+      <tr class="table-row-{{ appt.status }}">
+        <td>
+          <strong>{{ appt.appointment_datetime.strftime('%H:%M') }}</strong>
+        </td>
+        <td>
+          <div class="patient-cell">
+            <div class="patient-avatar">{{ appt.medical_card.user.full_name[0] }}</div>
+            <div>
+              <div class="patient-name">{{ appt.medical_card.user.full_name }}</div>
+              <div class="patient-email text-muted">{{ appt.medical_card.user.email }}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          {% if appt.status == 'pending' %}
+          <span class="badge badge-warning">Анамнез не заполнен</span>
+          {% elif appt.status == 'filled' %}
+          <span class="badge badge-success">Анамнез готов</span>
+          {% elif appt.status == 'completed' %}
+          <span class="badge badge-info">Завершён</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/doctor/patient/{{ appt.id }}" class="btn btn-sm btn-primary">
+            Открыть карту
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-number">{{ appointments | length }}</div>
+    <div class="stat-label">Всего приёмов</div>
+  </div>
+  <div class="stat-card stat-success">
+    <div class="stat-number">{{ appointments | selectattr('status', 'equalto', 'filled') | list | length }}</div>
+    <div class="stat-label">Анамнез заполнен</div>
+  </div>
+  <div class="stat-card stat-warning">
+    <div class="stat-number">{{ appointments | selectattr('status', 'equalto', 'pending') | list | length }}</div>
+    <div class="stat-label">Ожидают заполнения</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

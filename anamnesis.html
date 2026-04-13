@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Анамнез{% endblock %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="anamnesis-container">
+
+  <!-- PROGRESS BAR -->
+  <div class="progress-bar-wrap">
+    <div class="progress-steps">
+      <div class="step active" data-step="1">
+        <div class="step-circle">1</div>
+        <div class="step-label">Область боли</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" data-step="2">
+        <div class="step-circle">2</div>
+        <div class="step-label">Уровень боли</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" data-step="3">
+        <div class="step-circle">3</div>
+        <div class="step-label">Симптомы</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" data-step="4">
+        <div class="step-circle">4</div>
+        <div class="step-label">Доп. информация</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" data-step="5">
+        <div class="step-circle">5</div>
+        <div class="step-label">Подтверждение</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 1: 3D BODY -->
+  <div class="anamnesis-screen active" id="screen-1">
+    <div class="screen-header">
+      <h2>Укажите область боли</h2>
+      <p>Нажмите на область тела, где вы испытываете боль или дискомфорт</p>
+    </div>
+    <div class="body-selector-wrapper">
+      <div id="body3d-canvas"></div>
+      <div class="body-areas-list">
+        <p class="body-hint">Или выберите из списка:</p>
+        {% for key, label in areas.items() %}
+        <button class="area-btn" data-area="{{ key }}" onclick="selectArea('{{ key }}', '{{ label }}')">
+          {{ label }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="selected-area-display" id="selected-area-display" style="display:none;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#22c55e"/>
+      </svg>
+      Выбрана область: <strong id="selected-area-text"></strong>
+    </div>
+    <div class="screen-actions">
+      <button class="btn btn-primary" onclick="goToStep(2)" id="btn-step2" disabled>
+        Далее →
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: PAIN LEVEL -->
+  <div class="anamnesis-screen" id="screen-2">
+    <div class="screen-header">
+      <h2>Уровень боли</h2>
+      <p>Оцените интенсивность боли от 1 до 10</p>
+    </div>
+    <div class="pain-slider-wrap">
+      <div class="pain-faces">
+        <span class="pain-face" title="Нет боли">😊</span>
+        <span class="pain-face" title="Слабая">😐</span>
+        <span class="pain-face" title="Умеренная">😟</span>
+        <span class="pain-face" title="Сильная">😣</span>
+        <span class="pain-face" title="Невыносимая">😭</span>
+      </div>
+      <input
+        type="range" id="pain-slider" min="1" max="10" value="5"
+        class="pain-slider" oninput="updatePainDisplay(this.value)"
+      />
+      <div class="pain-value-display">
+        <span class="pain-number" id="pain-number">5</span>
+        <span class="pain-label" id="pain-label">Умеренная боль</span>
+      </div>
+      <div class="pain-scale-labels">
+        <span>1 — Почти нет боли</span>
+        <span>10 — Невыносимая</span>
+      </div>
+    </div>
+    <div class="screen-actions">
+      <button class="btn btn-outline" onclick="goToStep(1)">← Назад</button>
+      <button class="btn btn-primary" onclick="goToStep(3)">Далее →</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: SYMPTOMS -->
+  <div class="anamnesis-screen" id="screen-3">
+    <div class="screen-header">
+      <h2>Симптомы</h2>
+      <p id="symptoms-subtitle">На основе указанной области боли ИИ предлагает возможные симптомы</p>
+    </div>
+    <div class="loading-symptoms" id="loading-symptoms">
+      <div class="spinner"></div>
+      <p>Анализируем область боли...</p>
+    </div>
+    <div id="symptoms-list" class="symptoms-grid" style="display:none;"></div>
+    <div class="screen-actions">
+      <button class="btn btn-outline" onclick="goToStep(2)">← Назад</button>
+      <button class="btn btn-primary" onclick="goToStep(4)">Далее →</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: ADDITIONAL INFO -->
+  <div class="anamnesis-screen" id="screen-4">
+    <div class="screen-header">
+      <h2>Дополнительная информация</h2>
+      <p>Опишите другие жалобы, историю болезни или любую дополнительную информацию</p>
+    </div>
+    <div class="form-group">
+      <textarea
+        id="additional-info"
+        class="textarea-large"
+        placeholder="Например: боли появились 3 дня назад после физической нагрузки. Ранее имел операцию... Принимаю следующие препараты..."
+        rows="8"
+      ></textarea>
+    </div>
+    <div class="screen-actions">
+      <button class="btn btn-outline" onclick="goToStep(3)">← Назад</button>
+      <button class="btn btn-primary" onclick="goToStep(5)">Далее →</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: CONFIRMATION -->
+  <div class="anamnesis-screen" id="screen-5">
+    <div class="screen-header">
+      <h2>Подтверждение</h2>
+      <p>Проверьте и подтвердите введённые данные</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-row">
+        <span class="summary-label">Область боли</span>
+        <span class="summary-value" id="sum-area">—</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Уровень боли</span>
+        <span class="summary-value" id="sum-pain">—</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Симптомы</span>
+        <span class="summary-value" id="sum-symptoms">—</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Доп. информация</span>
+        <span class="summary-value" id="sum-info">—</span>
+      </div>
+    </div>
+    <div id="submit-error" class="alert alert-error" style="display:none;"></div>
+    <div id="submit-success" class="alert alert-success" style="display:none;">
+      Анамнез успешно сохранён! Врач получит информацию перед приёмом.
+    </div>
+    <div class="screen-actions">
+      <button class="btn btn-outline" onclick="goToStep(4)" id="btn-back-5">← Назад</button>
+      <button class="btn btn-primary" onclick="submitAnamnesis()" id="btn-submit">
+        Подтвердить и отправить
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const APPOINTMENT_ID = {{ appointment.id }};
+  const EXISTING = {% if existing %}{
+    pain_area: "{{ existing.pain_area }}",
+    pain_area_label: "{{ existing.pain_area_label }}",
+    pain_level: {{ existing.pain_level }},
+    symptoms: {{ existing.symptoms | tojson }},
+    additional_info: "{{ existing.additional_info or '' }}"
+  }{% else %}null{% endif %};
+</script>
+<script src="/static/js/body3d.js"></script>
+<script src="/static/js/anamnesis.js"></script>
+{% endblock %}

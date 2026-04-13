@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Администратор{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Панель администратора</h1>
+  <p class="text-muted">Управление пользователями и приёмами</p>
+</div>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="admin-grid">
+
+  <!-- CREATE USER -->
+  <div class="card">
+    <div class="card-title">Создать пользователя</div>
+    <form method="post" action="/admin/create-user">
+      <div class="form-group">
+        <label>ФИО</label>
+        <input type="text" name="full_name" placeholder="Иванов Иван Иванович" required />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" name="email" placeholder="user@clinic.ru" required />
+      </div>
+      <div class="form-group">
+        <label>Пароль</label>
+        <input type="password" name="password" placeholder="Минимум 6 символов" minlength="6" required />
+      </div>
+      <div class="form-group">
+        <label>Роль</label>
+        <select name="role">
+          <option value="patient">Пациент</option>
+          <option value="doctor">Врач</option>
+          <option value="admin">Администратор</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Создать пользователя</button>
+    </form>
+  </div>
+
+  <!-- CREATE APPOINTMENT -->
+  <div class="card">
+    <div class="card-title">Записать на приём</div>
+    {% if not patients %}
+    <p class="text-muted">Нет пациентов в системе. Сначала создайте пациента.</p>
+    {% elif not doctors %}
+    <p class="text-muted">Нет врачей в системе. Сначала создайте врача.</p>
+    {% else %}
+    <form method="post" action="/admin/create-appointment">
+      <div class="form-group">
+        <label>Пациент</label>
+        <select name="patient_id">
+          {% for p in patients %}
+          <option value="{{ p.id }}">{{ p.full_name }} ({{ p.email }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Врач</label>
+        <select name="doctor_id">
+          {% for d in doctors %}
+          <option value="{{ d.id }}">{{ d.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Дата приёма</label>
+        <input type="date" name="appointment_date" required />
+      </div>
+      <div class="form-group">
+        <label>Время приёма</label>
+        <input type="time" name="appointment_time" required />
+      </div>
+      <div class="form-group">
+        <label>Примечание (необязательно)</label>
+        <input type="text" name="notes" placeholder="Первичный приём, осмотр..." />
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Записать на приём</button>
+    </form>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- USERS TABLE -->
+<div class="section-title">Пациенты ({{ patients | length }})</div>
+<div class="table-container">
+  {% if not patients %}
+  <p class="text-muted" style="padding: 16px;">Пациентов нет</p>
+  {% else %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ФИО</th>
+        <th>Email</th>
+        <th>Дата регистрации</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in patients %}
+      <tr>
+        <td>
+          <div class="patient-cell">
+            <div class="patient-avatar">{{ p.full_name[0] }}</div>
+            {{ p.full_name }}
+          </div>
+        </td>
+        <td class="text-muted">{{ p.email }}</td>
+        <td class="text-muted">{{ p.created_at.strftime('%d.%m.%Y') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+<!-- APPOINTMENTS TABLE -->
+<div class="section-title">Последние записи</div>
+<div class="table-container">
+  {% if not appointments %}
+  <p class="text-muted" style="padding: 16px;">Записей нет</p>
+  {% else %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Дата и время</th>
+        <th>Пациент</th>
+        <th>Врач</th>
+        <th>Статус</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for appt in appointments %}
+      <tr>
+        <td><strong>{{ appt.appointment_datetime.strftime('%d.%m.%Y %H:%M') }}</strong></td>
+        <td>{{ appt.medical_card.user.full_name }}</td>
+        <td>{{ appt.doctor.full_name }}</td>
+        <td>
+          {% if appt.status == 'pending' %}
+          <span class="badge badge-warning">Ожидает</span>
+          {% elif appt.status == 'filled' %}
+          <span class="badge badge-success">Заполнен</span>
+          {% elif appt.status == 'completed' %}
+          <span class="badge badge-info">Завершён</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}
